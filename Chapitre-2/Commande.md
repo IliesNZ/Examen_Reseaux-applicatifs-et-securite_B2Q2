@@ -4,6 +4,12 @@
 
 ### Expression régulière (pattern) d'exemple pour l'analyse des logs :
 
+- logcheck (lancé toutes les heures) 
+- logwatch (lancé une fois par jour) 
+
+lisent les fichiers de logs et envoient des alertes dès qu'une ligne de log correspond à un
+pattern.
+
     ^\w{3} [ :0-9]{11} [.[:alnum:]-]+ SSMTP\[[0-9]+\]: Sent mail\ for . $*\backslash([\Theta-9]+[\Theta-9.]+$ Bye\) uid=[0-9]+ username=[\._[:alnum:]\ -]+ outbytes=[0-9]+\$   
 
 ## Fail2ban (Slide 10-12)
@@ -17,47 +23,84 @@
 
     Ini, TOML
 
-    [DEFAULT] [cite: 162]
-    bantime = <long enough> [cite: 163]
-    findtime = <time during retry are counted> [cite: 164]
-    maxretry = <n> [cite: 165]
-    action = %(action_mw)s [cite: 166]
+    [DEFAULT] 
+    bantime = <long enough> 
+    findtime = <time during retry are counted> 
+    maxretry = <n> 
+    action = %(action_mw)s 
 
-    [<service>] [cite: 167]
-    enabled = true [cite: 168]
+    [<service>] 
+    enabled = true 
+
+<b>recidive</b> : incrémente le bantime d'une IP
+récidiviste.
+
 
 ### Commandes client & Firewall
 
-- fail2ban-client status : Affiche le statut général.  
-- fail2ban-client status &lt;JAIL&gt; : Affiche le statut d'une prison spécifique.  
-- fail2ban-client set loglevel &lt;LEVEL&gt; : Modifie le niveau de log.  
-- fail2ban-client get loglevel : Affiche le niveau de log actuel.  
-- fail2ban-client set &lt;JAIL&gt; [un]banip &lt;IP&gt; : Bannit ou débannit manuellement une IP dans une prison. 
-- fail2ban-client set &lt;JAIL&gt; &lt;add|del&gt;ignoreip &lt;IP&gt; : Ajoute ou retire une IP de la liste d'ignorance d'une prison.  
-- iptables -L : Montre toutes les règles du firewall en cours (utile pour vérifier les actions de fail2ban).  
+#### Client
+
+    fail2ban-client status : Affiche le statut général.  
+
+    fail2ban-client status <JAIL> : Affiche le statut d'une prison spécifique.  
+    
+    fail2ban-client set loglevel <LEVEL> : Modifie le niveau de log.  
+    
+    fail2ban-client get loglevel : Affiche le niveau de log actuel.  
+    
+    fail2ban-client set <JAIL> [un]banip <IP> : Bannit ou débannit manuellement une IP dans une prison. 
+    
+    fail2ban-client set <JAIL> <add|del> ignoreip <IP> : Ajoute ou retire une IP de la liste d'ignorance d'une prison.  
+
+#### Firewall
+    
+    iptables -L : Montre toutes les règles du firewall en cours (utile pour vérifier les actions de fail2ban).  
 
 ## Tripwire (Slide 14-20) :
 
-- $sha512sum /etc/hosts : Commande d'exemple pour calculer le hash d'un fichier.  
-- twadmin --generate-keys -L /etc/tripwire/&lt;host&gt;-local.key : Génère la clé locale.  
-- twadmin --generate-keys -L /etc/tripwire/site.key : Génère la clé de site.  
+### Intro 
+
+    $sha512sum /etc/hosts : Commande d'exemple pour calculer le hash d'un fichier.  
+
+### Génération des clés
+    
+    twadmin --generate-keys -L /etc/tripwire/<host>-local.key : Génère la clé locale.  
+    
+    twadmin --generate-keys -L /etc/tripwire/site.key : Génère la clé de site.  
+    
+### Fichiers sources
+
 - /etc/tripwire/twcfg.txt : Fichier source pour générer la BD chiffrée de configuration (tw.cfg).  
+
 - /etc/tripwire/twpol.txt : Fichier source pour générer la BD chiffrée des règles (tw.pol).  
-- twadmin --create-cfgfile -S /etc/tripwire/site.key \ /etc/tripwire/twcfg.txt : Crée le fichier de configuration chiffré.  
-- twadmin --create-polfile -S /etc/tripwire/site.key \ /etc/tripwire/twpol.txt : Crée le fichier de politique chiffré.  
+    
+### Création des bases chiffrées
+
+    twadmin --create-cfgfile -S /etc/tripwire/site.key \ /etc/tripwire/twcfg.txt : Crée le fichier de configuration chiffré.  
+
+    twadmin --create-polfile -S /etc/tripwire/site.key \ /etc/tripwire/twpol.txt : Crée le fichier de politique chiffré.  
 
 ### Configuration des règles à surveiller :
 
     Plaintext
-    /etc -&gt; $(SEC_BIN); [cite: 224]
-    /etc/passwd -&gt; $(SEC_CONFIG); [cite: 225]
-    /etc/shadow -&gt; $(SEC_CONFIG); [cite: 226]
+    /etc -> $(SEC_BIN); 
+    /etc/passwd -> $(SEC_CONFIG); 
+    /etc/shadow -> $(SEC_CONFIG); 
 
-- tripwire --init : Initialise la base de données des fichiers surveillés.  
-- /var/lib/tripwire/&lt;host&gt;.twd : Emplacement où le fichier de base de données est créé.  
-- tripwire --check : Lance une vérification d'intégrité. 
+### Initialisation
+
+    tripwire --init : Initialise la base de données des fichiers surveillés.  
+    
+- /var/lib/tripwire/<host>.twd : Emplacement où le fichier de base de données est créé.  
+
+### Vérification et lecture des rapports
+
+    tripwire --check : Lance une vérification d'intégrité. 
+
+    twprint -m r --twrfile /var/lib/tripwire/report/<host>-<date>.twr : Commande pour lire le rapport généré en clair.  
+
 - /var/lib/tripwire/report : Dossier contenant les rapports générés au format .twr.  
-- twprint -m r --twrfile /var/lib/tripwire/report/&lt;host&gt;-&lt;date&gt;.twr : Commande pour lire le rapport généré en clair.  
+
 
 ## Portsentry (Slide 25) :
 
